@@ -89,10 +89,11 @@ button.ativo { background: var(--destaque); border-color: var(--destaque); }
   margin-top: -1px;
   /* isola a rolagem em vez de encadear no documento */
   overscroll-behavior-y: contain;
+  /* barra de rolagem oculta: a rolagem em si continua funcionando */
+  scrollbar-width: none;
 }
 
-.rolagem::-webkit-scrollbar { width: 6px; }
-.rolagem::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+.rolagem::-webkit-scrollbar { display: none; }
 
 /* ---------------------------------------------------------------- tabela */
 .escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -159,10 +160,13 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
   max-height: calc(100dvh - 56px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
   padding: 16px;
   background: var(--escuro);
   box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
 }
+
+.menu > div::-webkit-scrollbar { display: none; }
 
 .anos { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
 
