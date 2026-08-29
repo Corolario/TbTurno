@@ -4,35 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#37474f">
-<meta name="description" content="Escala de turnos dos grupos G1 a G5 - RPBC">
+<meta name="description" content="Escala de turnos 12h dos grupos G1 a G5 - RPBC">
 <title>RPBC - Tabela de Turnos</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2337474f'/%3E%3Crect x='6' y='9' width='20' height='15' rx='2' fill='%23fff'/%3E%3Crect x='6' y='9' width='20' height='4' fill='%231976d2'/%3E%3Crect x='9' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='14' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='19' y='16' width='4' height='3' fill='%23c62828'/%3E%3C/svg%3E">
 <style>
+/* ================================================================ comum */
 :root {
   --escuro:   #37474f;
   --destaque: #1976d2;
   --sel:      #e3f2fd;   /* coluna selecionada e linha de hoje */
   --borda:    #e0e0e0;
   --zebra:    #fafafa;
+  --fds:      #eceff1;   /* colunas de sabado e domingo */
+  --domingo:  #d32f2f;
   --t-07:     #006064;   /* turno da manha */
   --t-19:     #2e7d32;   /* turno da noite */
   --t-F:      #c62828;   /* folga */
-  --domingo:  #d32f2f;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
-  height: 100%;
-  /* impede o "puxar para atualizar" quando a rolagem infinita chega ao topo */
-  overscroll-behavior: none;
-  overflow: hidden;
-}
-
 body {
   font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #212121;
-  background: #f5f5f5;
   -webkit-font-smoothing: antialiased;
   /* evita o navegador movel inflar a fonte sozinho na rotacao */
   -webkit-text-size-adjust: 100%;
@@ -45,19 +39,50 @@ button {
   background: none;
   border: 1px solid rgba(255, 255, 255, .3);
   border-radius: 4px;
-  padding: 6px 14px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-button.ativo { background: var(--destaque); border-color: var(--destaque); }
-
-@media (hover: hover) {
-  button:hover, th.grupo:hover { background: rgba(255, 255, 255, .12); }
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--escuro);
+  color: #fff;
 }
 
-/* ---------------------------------------------------------------- layout */
-.app {
+.escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+.t-07 { color: var(--t-07); font-weight: 700; }
+.t-19 { color: var(--t-19); font-weight: 700; }
+.t-F  { color: var(--t-F);  font-weight: 700; }
+
+.domingo, .dom { color: var(--domingo); }
+
+/* ------------------------------------------------- qual vista aparece
+   Em pe: a lista de dias com rolagem infinita. Deitado: a grade com o ano
+   inteiro. O JS escuta esta mesma condicao (const `ehRetrato`) para montar
+   a vista; se mudar uma, mudar a outra. */
+@media (orientation: portrait) {
+  html, body {
+    height: 100%;
+    /* impede o "puxar para atualizar" quando a rolagem infinita chega ao topo */
+    overscroll-behavior: none;
+    overflow: hidden;
+  }
+  body { background: #f5f5f5; }
+  #paisagem { display: none; }
+}
+
+@media (orientation: landscape) {
+  /* documento em fluxo normal: numa tela deitada e baixa a grade precisa
+     poder rolar nos dois eixos, entao aqui nao vale o overflow:hidden */
+  body { background: var(--fds); padding: 16px; font-size: 13px; }
+  #retrato { display: none; }
+}
+
+/* ============================================== retrato: lista de dias */
+#retrato .app {
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -66,22 +91,19 @@ button.ativo { background: var(--destaque); border-color: var(--destaque); }
   background: #fff;
 }
 
-.topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+#retrato .topo {
   padding: 12px 16px;
-  background: var(--escuro);
-  color: #fff;
   /* acima do menu: o botao fechar recebe o clique de verdade, em vez de
      depender de acertar o fundo do overlay */
   z-index: 4;
 }
 
-.topo h1 { font-size: 20px; font-weight: 500; }
-.topo button.icone { border: 0; padding: 0 8px; font-size: 24px; }
+#retrato h1 { font-size: 20px; font-weight: 500; }
+#retrato button { padding: 6px 14px; }
+#retrato button.icone { border: 0; padding: 0 8px; font-size: 24px; }
+#retrato button.ativo { background: var(--destaque); border-color: var(--destaque); }
 
-.rolagem {
+#retrato .rolagem {
   flex: 1;
   overflow: hidden auto;
   /* encaixa 1px sob o topo: sem isso sobra uma fresta por onde as linhas
@@ -93,18 +115,15 @@ button.ativo { background: var(--destaque); border-color: var(--destaque); }
   scrollbar-width: none;
 }
 
-.rolagem::-webkit-scrollbar { display: none; }
+#retrato .rolagem::-webkit-scrollbar { display: none; }
 
-/* ---------------------------------------------------------------- tabela */
-.escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* com table-layout fixo, as 5 colunas restantes dividem o resto em partes iguais */
+#retrato .escala th:first-child { width: 22%; }
+#retrato .escala th:nth-child(2) { width: 13%; }
 
-/* com table-layout fixo, as 5 colunas restantes dividem os 65% em partes iguais */
-.escala th:first-child { width: 22%; }
-.escala th:nth-child(2) { width: 13%; }
+#retrato .escala thead { position: sticky; top: 0; z-index: 1; }
 
-.escala thead { position: sticky; top: 0; z-index: 1; }
-
-.escala th {
+#retrato .escala th {
   background: var(--escuro);
   color: #fff;
   font-weight: 500;
@@ -112,35 +131,31 @@ button.ativo { background: var(--destaque); border-color: var(--destaque); }
   border: 1px solid #546e7a;
 }
 
-.escala td {
+#retrato .escala td {
   padding: 10px 8px;
   text-align: center;
   font-weight: 500;
   border: 1px solid var(--borda);
 }
 
-th.grupo { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+#retrato th.grupo { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
 
-tbody tr:nth-child(even) { background: var(--zebra); }
-tr.hoje { background: var(--sel); }
-tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
-
-.domingo { color: var(--domingo); font-weight: 600; }
-.t-07 { color: var(--t-07); font-weight: 700; }
-.t-19 { color: var(--t-19); font-weight: 700; }
-.t-F  { color: var(--t-F);  font-weight: 700; }
+#retrato tbody tr:nth-child(even) { background: var(--zebra); }
+#retrato tr.hoje { background: var(--sel); }
+#retrato tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
+#retrato .domingo { font-weight: 600; }
 
 /* Realce da coluna. Data=1, Dia=2, G1=3 ... G5=7 */
-.escala[data-sel="G1"] td:nth-child(3), .escala[data-sel="G2"] td:nth-child(4),
-.escala[data-sel="G3"] td:nth-child(5), .escala[data-sel="G4"] td:nth-child(6),
-.escala[data-sel="G5"] td:nth-child(7) { background: var(--sel); }
+#retrato .escala[data-sel="G1"] td:nth-child(3), #retrato .escala[data-sel="G2"] td:nth-child(4),
+#retrato .escala[data-sel="G3"] td:nth-child(5), #retrato .escala[data-sel="G4"] td:nth-child(6),
+#retrato .escala[data-sel="G5"] td:nth-child(7) { background: var(--sel); }
 
-.escala[data-sel="G1"] th:nth-child(3), .escala[data-sel="G2"] th:nth-child(4),
-.escala[data-sel="G3"] th:nth-child(5), .escala[data-sel="G4"] th:nth-child(6),
-.escala[data-sel="G5"] th:nth-child(7) { background: var(--destaque); }
+#retrato .escala[data-sel="G1"] th:nth-child(3), #retrato .escala[data-sel="G2"] th:nth-child(4),
+#retrato .escala[data-sel="G3"] th:nth-child(5), #retrato .escala[data-sel="G4"] th:nth-child(6),
+#retrato .escala[data-sel="G5"] th:nth-child(7) { background: var(--destaque); }
 
-/* ------------------------------------------------------------------ menu */
-.menu {
+/* ----------------------------------------------------- retrato: menu */
+#retrato .menu {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .5);
@@ -152,9 +167,9 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
   align-items: flex-start;
   padding-top: 56px;
 }
-.menu[hidden] { display: none; }
+#retrato .menu[hidden] { display: none; }
 
-.menu > div {
+#retrato .menu > div {
   width: 100%;
   max-width: 600px;
   max-height: calc(100dvh - 56px);
@@ -166,11 +181,11 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
   box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
 }
 
-.menu > div::-webkit-scrollbar { display: none; }
+#retrato .menu > div::-webkit-scrollbar { display: none; }
 
-.anos { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+#retrato .anos { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
 
-.meses {
+#retrato .meses {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(6, auto);
@@ -178,35 +193,110 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
   gap: 8px;
 }
 
-.meses button { padding: 10px 8px; border-color: rgba(255, 255, 255, .15); }
+#retrato .meses button { padding: 10px 8px; border-color: rgba(255, 255, 255, .15); }
+
+/* ============================================ paisagem: grade do ano */
+#paisagem .app {
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+
+#paisagem .topo { gap: 16px; padding: 10px 16px; }
+#paisagem h1 { font-size: 17px; font-weight: 500; letter-spacing: .5px; }
+#paisagem button { padding: 4px 10px; }
+
+#paisagem .navegacao { display: flex; align-items: center; gap: 10px; }
+#paisagem .navegacao strong { font-size: 19px; min-width: 4ch; text-align: center; }
+
+#paisagem .faixa { overflow-x: auto; }
+
+#paisagem .escala { min-width: 1240px; }
+
+#paisagem .escala th, #paisagem .escala td { border: 1px solid var(--borda); text-align: center; height: 21px; }
+#paisagem .escala td { font-size: 11px; }
+
+/* rotulo do mes / do grupo, repetido nas duas pontas da faixa */
+#paisagem tr > th:first-child, #paisagem tr > th:last-child {
+  width: 42px;
+  background: var(--escuro);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#paisagem .semana th { background: var(--fds); color: #546e7a; font-size: 10px; font-weight: 600; }
+#paisagem .semana th.fds { background: #cfd8dc; }
+
+#paisagem .meses tr:nth-child(even) td { background: var(--zebra); }
+#paisagem td.fds { background: #f0f2f3; }
+
+/* coluna de hoje: faixa vertical que atravessa a tabela inteira, desenhada
+   por dentro da celula para nao brigar com o fundo dela */
+#paisagem .hoje { box-shadow: inset 2px 0 0 var(--destaque), inset -2px 0 0 var(--destaque); }
+#paisagem td.data-hoje { color: var(--destaque); font-weight: 700; }
+
+#paisagem .turnos tr[data-g] { cursor: pointer; user-select: none; }
+
+/* com um grupo escolhido, os outros saem de cena */
+#paisagem .escala[data-sel] .turnos tr[data-g]:not(.sel) td { color: #cfd8dc; }
+#paisagem .turnos tr.sel > th { background: var(--destaque); }
+
+/* so onde existe mouse de verdade: no celular deitado o realce grudaria
+   depois do toque */
+@media (hover: hover) {
+  #retrato button:hover, #retrato th.grupo:hover { background: rgba(255, 255, 255, .12); }
+  #paisagem button:hover { background: rgba(255, 255, 255, .15); }
+  #paisagem .turnos tr[data-g]:hover > th { background: #546e7a; }
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="topo">
-    <button class="icone" id="btnMenu" aria-label="Abrir menu" aria-expanded="false">&#9776;</button>
-    <h1>RPBC</h1>
-    <button id="btnHoje">Hoje</button>
-  </header>
 
-  <div class="menu" id="menu" hidden>
-    <div>
-      <div class="anos" id="anos"></div>
-      <div class="meses" id="meses"></div>
+<div id="retrato">
+  <div class="app">
+    <header class="topo">
+      <button class="icone" id="btnMenu" aria-label="Abrir menu" aria-expanded="false">&#9776;</button>
+      <h1>RPBC</h1>
+      <button id="btnHoje">Hoje</button>
+    </header>
+
+    <div class="menu" id="menu" hidden>
+      <div>
+        <div class="anos" id="anos"></div>
+        <div class="meses" id="meses"></div>
+      </div>
+    </div>
+
+    <div class="rolagem" id="rolagem">
+      <table class="escala" id="escala">
+        <thead>
+          <tr>
+            <th>Data</th><th>Dia</th>
+            <th class="grupo">G1</th><th class="grupo">G2</th><th class="grupo">G3</th>
+            <th class="grupo">G4</th><th class="grupo">G5</th>
+          </tr>
+        </thead>
+        <tbody id="corpo"></tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <div class="rolagem" id="rolagem">
-    <table class="escala" id="escala">
-      <thead>
-        <tr>
-          <th>Data</th><th>Dia</th>
-          <th class="grupo">G1</th><th class="grupo">G2</th><th class="grupo">G3</th>
-          <th class="grupo">G4</th><th class="grupo">G5</th>
-        </tr>
-      </thead>
-      <tbody id="corpo"></tbody>
-    </table>
+<div id="paisagem">
+  <div class="app">
+    <header class="topo">
+      <h1>TABELA DE TURNO 12H</h1>
+      <div class="navegacao">
+        <button id="anterior" aria-label="Ano anterior">&#9664;</button>
+        <strong id="rotuloAno"></strong>
+        <button id="proximo" aria-label="Proximo ano">&#9654;</button>
+        <button id="btnAnoHoje">Hoje</button>
+      </div>
+    </header>
+
+    <div class="faixa"><table class="escala" id="escalaAno"></table></div>
   </div>
 </div>
 
@@ -217,23 +307,22 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
   // ----------------------------------------------------------- regra
   // G1 inicia em 18/12/2025. Cada grupo entra 2 dias depois do anterior.
   // Ciclo de 10 dias: 2x 07h, 2x 19h, 6x folga.
+  // Copia unica: as duas vistas leem daqui, entao nao ha como divergirem.
   const INICIO_G1 = new Date(2025, 11, 18);
-  const GRUPOS = ['G1', 'G2', 'G3', 'G4', 'G5'];
-  const DEFASAGEM = { G1: 0, G2: 2, G3: 4, G4: 6, G5: 8 };
+  const DEFASAGEM = [0, 2, 4, 6, 8];                       // G1..G5
+  const GRUPOS = DEFASAGEM.map((_, i) => `G${i + 1}`);
   const CICLO = 10;
-  const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+  const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];   // coluna "Dia"
+  const SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];               // grade, comeca na segunda
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const PAGINA = 30;      // dias carregados por vez
-  const LIMIAR = 200;     // px do fim da rolagem que disparam o carregamento
+  const MESES_CURTO = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN',
+                       'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
+  const mod = (a, n) => (a % n + n) % n;
   const pad = (n) => String(n).padStart(2, '0');
-
-  const maisDias = (d, n) => {
-    const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    r.setDate(r.getDate() + n);
-    return r;
-  };
+  const maisDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 
   // Diferenca em dias de calendario. Passa pelo UTC de proposito: subtrair
   // timestamps locais erra por um dia quando ha mudanca de horario de verao.
@@ -241,160 +330,283 @@ tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
     Math.round((Date.UTC(ate.getFullYear(), ate.getMonth(), ate.getDate()) -
                 Date.UTC(de.getFullYear(), de.getMonth(), de.getDate())) / 864e5);
 
-  const turnoDe = (data, defasagem) => {
-    const dia = (diasEntre(maisDias(INICIO_G1, defasagem), data) % CICLO + CICLO) % CICLO;
+  const turnoDe = (d, defasagem) => {
+    const dia = mod(diasEntre(maisDias(INICIO_G1, defasagem), d), CICLO);
     return dia < 2 ? '07' : dia < 4 ? '19' : 'F';
   };
 
-  const formata = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
   const chave = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  // ------------------------------------------------------- elementos
-  const rolagem = document.getElementById('rolagem');
-  const escala = document.getElementById('escala');
-  const corpo = document.getElementById('corpo');
-  const menu = document.getElementById('menu');
-  const btnMenu = document.getElementById('btnMenu');
 
   const agora = new Date();
   const HOJE = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const CHAVE_HOJE = chave(HOJE);
-  const ANOS = [-1, 0, 1, 2].map((n) => HOJE.getFullYear() + n);
 
-  let inicio, fim, anoSel = HOJE.getFullYear(), ocupado = false;
+  // Grupo em destaque, compartilhado: escolher na grade e girar o aparelho
+  // chega na lista com a mesma coluna realcada.
+  let grupoSel = '';
 
-  // -------------------------------------------------------- montagem
-  const linha = (d) => {
-    const turnos = GRUPOS.map((g) => {
-      const t = turnoDe(d, DEFASAGEM[g]);
-      return `<td class="t-${t}">${t}</td>`;
-    }).join('');
-    return `<tr data-d="${chave(d)}"${chave(d) === CHAVE_HOJE ? ' class="hoje"' : ''}>` +
-           `<td>${formata(d)}</td>` +
-           `<td${d.getDay() === 0 ? ' class="domingo"' : ''}>${DIAS[d.getDay()]}</td>` +
-           turnos + '</tr>';
-  };
+  // ======================================== vista retrato: lista de dias
+  const montarRetrato = () => {
+    const PAGINA = 30;      // dias carregados por vez
+    const LIMIAR = 200;     // px do fim da rolagem que disparam o carregamento
+    const ANOS = [-1, 0, 1, 2].map((n) => HOJE.getFullYear() + n);
 
-  const faixa = (de, ate) => {
-    let html = '';
-    for (let d = de; d <= ate; d = maisDias(d, 1)) html += linha(d);
-    return html;
-  };
+    const rolagem = document.getElementById('rolagem');
+    const escala = document.getElementById('escala');
+    const corpo = document.getElementById('corpo');
+    const menu = document.getElementById('menu');
+    const btnMenu = document.getElementById('btnMenu');
 
-  // ------------------------------------------------------- paginacao
-  const carregarPassado = (n) => {
-    const ate = maisDias(inicio, -1);
-    const de = maisDias(ate, -(n - 1));
-    const alturaAntes = rolagem.scrollHeight;
-    const topoAntes = rolagem.scrollTop;
+    let inicio, fim, anoSel = HOJE.getFullYear(), ocupado = false;
 
-    corpo.insertAdjacentHTML('afterbegin', faixa(de, ate));
-    inicio = de;
+    const formata = (d) =>
+      `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
 
-    // Ler scrollHeight forca o layout aqui mesmo, entao da pra reancorar a
-    // rolagem antes do proximo quadro - sem piscada ao inserir linhas acima.
-    rolagem.scrollTop = topoAntes + (rolagem.scrollHeight - alturaAntes);
-  };
+    // -------------------------------------------------------- montagem
+    const linha = (d) => {
+      const turnos = DEFASAGEM.map((def) => {
+        const t = turnoDe(d, def);
+        return `<td class="t-${t}">${t}</td>`;
+      }).join('');
+      return `<tr data-d="${chave(d)}"${chave(d) === CHAVE_HOJE ? ' class="hoje"' : ''}>` +
+             `<td>${formata(d)}</td>` +
+             `<td${d.getDay() === 0 ? ' class="domingo"' : ''}>${DIAS[d.getDay()]}</td>` +
+             turnos + '</tr>';
+    };
 
-  const carregarFuturo = (n) => {
-    const de = maisDias(fim, 1);
-    fim = maisDias(de, n - 1);
-    corpo.insertAdjacentHTML('beforeend', faixa(de, fim));
-  };
+    const faixa = (de, ate) => {
+      let html = '';
+      for (let d = de; d <= ate; d = maisDias(d, 1)) html += linha(d);
+      return html;
+    };
 
-  // Carrega o alvo com folga dos dois lados. A folga importa: sem conteudo
-  // suficiente abaixo do alvo, o navegador limita a rolagem e a data pedida
-  // nunca alcanca o topo da area visivel.
-  const garantir = (alvo) => {
-    if (alvo < inicio) carregarPassado(diasEntre(alvo, inicio) + PAGINA);
-    if (alvo > fim) carregarFuturo(diasEntre(fim, alvo) + PAGINA);
-  };
+    // ------------------------------------------------------- paginacao
+    const carregarPassado = (n) => {
+      const ate = maisDias(inicio, -1);
+      const de = maisDias(ate, -(n - 1));
+      const alturaAntes = rolagem.scrollHeight;
+      const topoAntes = rolagem.scrollTop;
 
-  // ------------------------------------------------------- navegacao
-  const irParaHoje = () => {
-    fecharMenu();
-    const tr = corpo.querySelector('.hoje');
-    if (tr) rolagem.scrollTop = tr.offsetTop - rolagem.clientHeight / 2 + tr.offsetHeight / 2;
-  };
+      corpo.insertAdjacentHTML('afterbegin', faixa(de, ate));
+      inicio = de;
 
-  const irParaMes = (mes) => {
-    const alvo = new Date(anoSel, mes, 1);
-    garantir(alvo);
-    fecharMenu();
+      // Ler scrollHeight forca o layout aqui mesmo, entao da pra reancorar a
+      // rolagem antes do proximo quadro - sem piscada ao inserir linhas acima.
+      rolagem.scrollTop = topoAntes + (rolagem.scrollHeight - alturaAntes);
+    };
 
-    const tr = corpo.querySelector(`[data-d="${chave(alvo)}"]`);
-    if (!tr) return;
+    const carregarFuturo = (n) => {
+      const de = maisDias(fim, 1);
+      fim = maisDias(de, n - 1);
+      corpo.insertAdjacentHTML('beforeend', faixa(de, fim));
+    };
 
-    // offsetTop de um <tr> e relativo a <table>, que comeca no topo da area
-    // rolavel - entao serve direto como scrollTop.
-    const desejado = tr.offsetTop - tr.offsetHeight;
-    rolagem.scrollTop = desejado;
+    // Carrega o alvo com folga dos dois lados. A folga importa: sem conteudo
+    // suficiente abaixo do alvo, o navegador limita a rolagem e a data pedida
+    // nunca alcanca o topo da area visivel.
+    const garantir = (alvo) => {
+      if (alvo < inicio) carregarPassado(diasEntre(alvo, inicio) + PAGINA);
+      if (alvo > fim) carregarFuturo(diasEntre(fim, alvo) + PAGINA);
+    };
 
-    // Em telas altas pode faltar conteudo abaixo do alvo e a rolagem parar
-    // antes dele. Carrega mais e tenta de novo, com um teto de seguranca.
-    for (let i = 0; i < 5 && rolagem.scrollTop < desejado; i++) {
-      carregarFuturo(PAGINA);
+    // ------------------------------------------------------- navegacao
+    const irParaHoje = () => {
+      fecharMenu();
+      const tr = corpo.querySelector('.hoje');
+      if (tr) rolagem.scrollTop = tr.offsetTop - rolagem.clientHeight / 2 + tr.offsetHeight / 2;
+    };
+
+    const irParaMes = (mes) => {
+      const alvo = new Date(anoSel, mes, 1);
+      garantir(alvo);
+      fecharMenu();
+
+      const tr = corpo.querySelector(`[data-d="${chave(alvo)}"]`);
+      if (!tr) return;
+
+      // offsetTop de um <tr> e relativo a <table>, que comeca no topo da area
+      // rolavel - entao serve direto como scrollTop.
+      const desejado = tr.offsetTop - tr.offsetHeight;
       rolagem.scrollTop = desejado;
+
+      // Em telas altas pode faltar conteudo abaixo do alvo e a rolagem parar
+      // antes dele. Carrega mais e tenta de novo, com um teto de seguranca.
+      for (let i = 0; i < 5 && rolagem.scrollTop < desejado; i++) {
+        carregarFuturo(PAGINA);
+        rolagem.scrollTop = desejado;
+      }
+    };
+
+    // ------------------------------------------------------------ menu
+    const botoes = (destino, itens, ativo, aoClicar) => {
+      destino.replaceChildren(...itens.map((rotulo, i) => {
+        const b = document.createElement('button');
+        if (ativo(i)) b.className = 'ativo';
+        b.textContent = rotulo;
+        b.onclick = () => aoClicar(i);
+        return b;
+      }));
+    };
+
+    const desenharMenu = () => {
+      botoes(document.getElementById('anos'), ANOS,
+        (i) => ANOS[i] === anoSel,
+        (i) => { anoSel = ANOS[i]; desenharMenu(); });
+      botoes(document.getElementById('meses'), MESES,
+        (i) => i === HOJE.getMonth() && anoSel === HOJE.getFullYear(),
+        irParaMes);
+    };
+
+    function alternarMenu(abrir) {
+      menu.hidden = !abrir;
+      btnMenu.innerHTML = abrir ? '&#10005;' : '&#9776;';
+      btnMenu.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+      btnMenu.setAttribute('aria-expanded', String(abrir));
+      rolagem.style.overflowY = abrir ? 'hidden' : 'auto';
+      if (abrir) desenharMenu();
     }
+
+    function fecharMenu() { alternarMenu(false); }
+
+    const aplicarGrupo = () => {
+      if (grupoSel) escala.dataset.sel = grupoSel; else delete escala.dataset.sel;
+    };
+
+    // -------------------------------------------------------- eventos
+    rolagem.addEventListener('scroll', () => {
+      if (ocupado) return;
+      ocupado = true;
+      if (rolagem.scrollTop < LIMIAR) carregarPassado(PAGINA);
+      if (rolagem.scrollHeight - rolagem.scrollTop - rolagem.clientHeight < LIMIAR) carregarFuturo(PAGINA);
+      ocupado = false;
+    }, { passive: true });
+
+    btnMenu.onclick = () => alternarMenu(menu.hidden);
+    document.getElementById('btnHoje').onclick = irParaHoje;
+    menu.onclick = (e) => { if (e.target === menu) fecharMenu(); };
+
+    escala.tHead.onclick = (e) => {
+      const th = e.target.closest('th.grupo');
+      if (!th) return;
+      grupoSel = grupoSel === th.textContent ? '' : th.textContent;
+      aplicarGrupo();
+    };
+
+    // ---------------------------------------------------------- inicio
+    inicio = maisDias(HOJE, -10);
+    fim = maisDias(HOJE, 19);
+    corpo.innerHTML = faixa(inicio, fim);
+    aplicarGrupo();
+    // depende de offsetTop/clientHeight, que so valem com a vista visivel -
+    // por isso a montagem e preguicosa, feita na primeira vez que ela aparece
+    irParaHoje();
+
+    return { aplicarGrupo, tecla: (e) => { if (e.key === 'Escape') fecharMenu(); } };
   };
 
-  // ------------------------------------------------------------ menu
-  const botoes = (destino, itens, ativo, aoClicar) => {
-    destino.replaceChildren(...itens.map((rotulo, i) => {
-      const b = document.createElement('button');
-      if (ativo(i)) b.className = 'ativo';
-      b.textContent = rotulo;
-      b.onclick = () => aoClicar(i);
-      return b;
-    }));
+  // ====================================== vista paisagem: grade do ano
+  const montarPaisagem = () => {
+    // A semana de 7 dias e o ciclo de 10 voltam a coincidir a cada 70 dias
+    // (MMC de 7 e 10). Entao uma unica faixa de 70 colunas serve o ano
+    // inteiro: cada coluna tem sempre o mesmo dia da semana e os mesmos
+    // turnos. Os meses so mudam de posicao dentro da faixa.
+    const COLUNAS = 70;
+    const EPOCA = new Date(2025, 11, 15);   // uma segunda-feira: ancora a coluna 0
+
+    const escala = document.getElementById('escalaAno');
+    const rotuloAno = document.getElementById('rotuloAno');
+
+    let ano = HOJE.getFullYear(), colHoje = -1;
+
+    const coluna = (d) => mod(diasEntre(EPOCA, d), COLUNAS);
+    const celulas = (fn) => Array.from({ length: COLUNAS }, (_, c) => fn(c)).join('');
+
+    const classe = (c) => (c % 7 > 4 ? 'fds ' : '') + (c % 7 === 6 ? 'dom ' : '') +
+                          (c === colHoje ? 'hoje' : '');
+
+    const faixaSemana = () =>
+      `<tr class="semana"><th></th>${celulas((c) => `<th class="${classe(c)}">${SEMANA[c % 7]}</th>`)}<th></th></tr>`;
+
+    const faixaMes = (m) => {
+      const dias = Array(COLUNAS).fill('');
+      for (let dia = 1, ultimo = new Date(ano, m + 1, 0).getDate(); dia <= ultimo; dia++)
+        dias[coluna(new Date(ano, m, dia))] = dia;
+      return `<tr><th>${MESES_CURTO[m]}</th>` + celulas((c) => {
+        const eHoje = c === colHoje && dias[c] === HOJE.getDate() && m === HOJE.getMonth();
+        return `<td class="${classe(c)}${eHoje ? ' data-hoje' : ''}">${dias[c]}</td>`;
+      }) + `<th>${MESES_CURTO[m]}</th></tr>`;
+    };
+
+    const faixaGrupo = (g) => {
+      // Qualquer data da coluna serve: o ciclo de 10 dias divide 70 certinho.
+      return `<tr data-g="${GRUPOS[g]}"><th>${GRUPOS[g]}</th>` + celulas((c) => {
+        const t = turnoDe(maisDias(EPOCA, c), DEFASAGEM[g]);
+        return `<td class="t-${t}${c === colHoje ? ' hoje' : ''}">${t}</td>`;
+      }) + `<th>${GRUPOS[g]}</th></tr>`;
+    };
+
+    const aplicarGrupo = () => {
+      escala.querySelectorAll('tr[data-g]')
+            .forEach((r) => r.classList.toggle('sel', r.dataset.g === grupoSel));
+      if (grupoSel) escala.dataset.sel = grupoSel; else delete escala.dataset.sel;
+    };
+
+    const desenhar = () => {
+      colHoje = ano === HOJE.getFullYear() ? coluna(HOJE) : -1;
+      rotuloAno.textContent = ano;
+      escala.innerHTML =
+        `<thead>${faixaSemana()}</thead>` +
+        `<tbody class="meses">${MESES_CURTO.map((_, m) => faixaMes(m)).join('')}</tbody>` +
+        `<tbody class="turnos">${faixaSemana()}${DEFASAGEM.map((_, g) => faixaGrupo(g)).join('')}</tbody>`;
+      aplicarGrupo();
+    };
+
+    // -------------------------------------------------------- eventos
+    const mudarAno = (n) => { ano += n; desenhar(); };
+
+    escala.onclick = (e) => {
+      const tr = e.target.closest('.turnos tr[data-g]');
+      if (!tr) return;
+      grupoSel = grupoSel === tr.dataset.g ? '' : tr.dataset.g;
+      aplicarGrupo();
+    };
+
+    document.getElementById('anterior').onclick = () => mudarAno(-1);
+    document.getElementById('proximo').onclick = () => mudarAno(1);
+    document.getElementById('btnAnoHoje').onclick = () => { ano = HOJE.getFullYear(); desenhar(); };
+
+    desenhar();
+
+    return {
+      aplicarGrupo,
+      tecla: (e) => {
+        if (e.key === 'ArrowLeft') mudarAno(-1);
+        if (e.key === 'ArrowRight') mudarAno(1);
+      },
+    };
   };
 
-  const desenharMenu = () => {
-    botoes(document.getElementById('anos'), ANOS,
-      (i) => ANOS[i] === anoSel,
-      (i) => { anoSel = ANOS[i]; desenharMenu(); });
-    botoes(document.getElementById('meses'), MESES,
-      (i) => i === HOJE.getMonth() && anoSel === HOJE.getFullYear(),
-      irParaMes);
+  // ------------------------------------------------- troca entre vistas
+  // Mesma condicao das media queries la em cima: o CSS decide o que aparece,
+  // isto aqui decide o que e construido.
+  const ehRetrato = matchMedia('(orientation: portrait)');
+  const vistas = {};
+  let atual = '';
+
+  const trocarVista = () => {
+    atual = ehRetrato.matches ? 'retrato' : 'paisagem';
+    // Monta so na primeira vez que a vista aparece: remontar perderia onde a
+    // pessoa estava. Nas seguintes basta reaplicar o grupo escolhido do outro
+    // lado.
+    if (vistas[atual]) vistas[atual].aplicarGrupo();
+    else vistas[atual] = atual === 'retrato' ? montarRetrato() : montarPaisagem();
   };
 
-  function alternarMenu(abrir) {
-    menu.hidden = !abrir;
-    btnMenu.innerHTML = abrir ? '&#10005;' : '&#9776;';
-    btnMenu.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
-    btnMenu.setAttribute('aria-expanded', String(abrir));
-    rolagem.style.overflowY = abrir ? 'hidden' : 'auto';
-    if (abrir) desenharMenu();
-  }
+  // um handler so: as duas vistas disputavam document.onkeydown
+  document.onkeydown = (e) => vistas[atual].tecla(e);
 
-  function fecharMenu() { alternarMenu(false); }
-
-  // -------------------------------------------------------- eventos
-  rolagem.addEventListener('scroll', () => {
-    if (ocupado) return;
-    ocupado = true;
-    if (rolagem.scrollTop < LIMIAR) carregarPassado(PAGINA);
-    if (rolagem.scrollHeight - rolagem.scrollTop - rolagem.clientHeight < LIMIAR) carregarFuturo(PAGINA);
-    ocupado = false;
-  }, { passive: true });
-
-  btnMenu.onclick = () => alternarMenu(menu.hidden);
-  document.getElementById('btnHoje').onclick = irParaHoje;
-  menu.onclick = (e) => { if (e.target === menu) fecharMenu(); };
-  document.onkeydown = (e) => { if (e.key === 'Escape') fecharMenu(); };
-
-  escala.tHead.onclick = (e) => {
-    const th = e.target.closest('th.grupo');
-    if (!th) return;
-    if (escala.dataset.sel === th.textContent) delete escala.dataset.sel;
-    else escala.dataset.sel = th.textContent;
-  };
-
-  // ---------------------------------------------------------- inicio
-  inicio = maisDias(HOJE, -10);
-  fim = maisDias(HOJE, 19);
-  corpo.innerHTML = faixa(inicio, fim);
-  irParaHoje();
+  ehRetrato.addEventListener('change', trocarVista);
+  trocarVista();
 })();
 </script>
 </body>
