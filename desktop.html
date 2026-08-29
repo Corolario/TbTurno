@@ -76,30 +76,28 @@ button:hover { background: rgba(255, 255, 255, .15); }
 .semana th { background: var(--fds); color: #546e7a; font-size: 10px; font-weight: 600; }
 .semana th.fds { background: #cfd8dc; }
 
-tbody tr:nth-child(even) td { background: var(--zebra); }
+.meses tr:nth-child(even) td { background: var(--zebra); }
 td.fds { background: #f0f2f3; }
 .dom { color: var(--domingo); }
 
 /* coluna de hoje: faixa vertical que atravessa a tabela inteira, desenhada
-   por dentro da celula para nao brigar com o fundo do turno */
+   por dentro da celula para nao brigar com o fundo dela */
 .hoje { box-shadow: inset 2px 0 0 var(--destaque), inset -2px 0 0 var(--destaque); }
 td.data-hoje { color: var(--destaque); font-weight: 700; }
 
 /* --------------------------------------------------------------- turnos */
 .turnos td { font-weight: 700; }
-.t-07 { color: var(--t-07); background: #b2dfdb; }
-.t-19 { color: var(--t-19); background: #c8e6c9; }
-.t-F  { color: var(--t-F);  background: #ffcdd2; }
+.t-07 { color: var(--t-07); }
+.t-19 { color: var(--t-19); }
+.t-F  { color: var(--t-F); }
 
-.turnos tr { cursor: pointer; user-select: none; }
-.turnos tr:hover th { background: #546e7a; }
+.turnos tr[data-g] { cursor: pointer; user-select: none; }
+.turnos tr[data-g]:hover > th { background: #546e7a; }
 
 /* com um grupo escolhido, os outros saem de cena */
-.escala[data-sel] .turnos tr:not(.sel) td { color: #cfd8dc; background: #fff; }
+.escala[data-sel] .turnos tr[data-g]:not(.sel) td { color: #cfd8dc; }
 .turnos tr.sel > th { background: var(--destaque); }
 
-.legenda { display: flex; gap: 18px; padding: 10px 16px; color: #607d8b; font-size: 12px; }
-.legenda b { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -115,13 +113,6 @@ td.data-hoje { color: var(--destaque); font-weight: 700; }
   </header>
 
   <div class="rolagem"><table class="escala" id="escala"></table></div>
-
-  <p class="legenda">
-    <span><b style="color:#006064">07</b> manha</span>
-    <span><b style="color:#2e7d32">19</b> noite</span>
-    <span><b style="color:#c62828">F</b> folga</span>
-    <span>Clique num grupo para destaca-lo. Setas do teclado mudam o ano.</span>
-  </p>
 </div>
 
 <script>
@@ -201,7 +192,7 @@ td.data-hoje { color: var(--destaque); font-weight: 700; }
     rotuloAno.textContent = ano;
     escala.innerHTML =
       `<thead>${faixaSemana()}</thead>` +
-      `<tbody>${MESES.map((_, m) => faixaMes(m)).join('')}</tbody>` +
+      `<tbody class="meses">${MESES.map((_, m) => faixaMes(m)).join('')}</tbody>` +
       `<tbody class="turnos">${faixaSemana()}${DEFASAGEM.map((_, g) => faixaGrupo(g)).join('')}</tbody>`;
     escala.querySelector(`[data-g="${grupoSel}"]`)?.classList.add('sel');
   };
