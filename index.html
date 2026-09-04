@@ -8,22 +8,28 @@
 <title>RPBC - Tabela de Turnos</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2337474f'/%3E%3Crect x='6' y='9' width='20' height='15' rx='2' fill='%23fff'/%3E%3Crect x='6' y='9' width='20' height='4' fill='%231976d2'/%3E%3Crect x='9' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='14' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='19' y='16' width='4' height='3' fill='%23c62828'/%3E%3C/svg%3E">
 <style>
-/* ================================================================ comum */
+/* ================================================================ cores
+   Paleta de fundos e bordas. Cor que so aparece em texto fica junto com
+   a letra, na secao de tipografia logo abaixo. */
 :root {
   --escuro:   #37474f;
-  --destaque: #1976d2;
+  --destaque: #1976d2;   /* grupo escolhido e dia de hoje */
   --sel:      #e3f2fd;   /* coluna selecionada e linha de hoje */
   --borda:    #e0e0e0;
   --zebra:    #fafafa;
   --fds:      #eceff1;   /* colunas de sabado e domingo */
-  --domingo:  #d32f2f;
-  --t-07:     #006064;   /* turno da manha */
-  --t-19:     #2e7d32;   /* turno da noite */
-  --t-F:      #c62828;   /* folga */
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ========================================= tipografia (as duas vistas)
+   Familia, tamanho, peso e cor de cada texto moram SO AQUI e valem igual
+   na lista (celular em pe) e na grade (deitado / desktop). Para mudar a
+   letra de alguma coisa, mude nesta secao. As secoes das vistas, mais
+   abaixo, so cuidam de layout (espacamento, largura, fundo, borda) e nao
+   tem nenhuma propriedade de fonte - se uma aparecer la, as duas vistas
+   voltam a divergir. */
 
+/* texto base: a familia de todo o app e o tamanho do que nao tem regra
+   propria (botoes Hoje e das setas, anos e meses do menu) */
 body {
   font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #212121;
@@ -33,9 +39,42 @@ body {
   text-size-adjust: 100%;
 }
 
+/* barra do topo */
+.topo  { color: #fff; }
+button { font: inherit; color: #fff; }
+h1 { font-size: 18px; font-weight: 500; letter-spacing: .5px; }   /* RPBC / TABELA DE TURNO 12H */
+.navegacao strong { font-size: 19px; }                            /* ano entre as setas (so na grade) */
+button.icone      { font-size: 24px; }                            /* botao do menu (so na lista) */
+
+/* cabecalho da tabela: Data, Dia, G1..G5 na lista; JAN..DEZ, G1..G5 na grade */
+.escala th { font-size: 13px; font-weight: 600; color: #fff; }
+
+/* dia da semana: Seg, Ter... na lista; S, T, Q... na grade */
+.escala .dia { font-size: 13px; font-weight: 500; color: #546e7a; }
+
+/* dia do mes: 18.12.25 na lista; 18 na grade */
+.escala .data { font-size: 13px; font-weight: 500; color: #212121; }
+
+/* turnos: 07 (manha), 19 (noite) e F (folga) */
+.t-07, .t-19, .t-F { font-size: 13px; font-weight: 700; }
+.t-07 { color: #006064; }
+.t-19 { color: #2e7d32; }
+.t-F  { color: #c62828; }
+
+/* domingo: o dia da semana e o dia do mes. Fica depois das regras acima
+   de proposito: na mesma celula, vence. */
+.escala .dom { color: #d32f2f; font-weight: 600; }
+
+/* hoje: o dia do mes de hoje. Fica por ultimo: vence ate o domingo. */
+.escala .data-hoje { color: var(--destaque); font-weight: 700; }
+
+/* na grade, com um grupo escolhido os turnos dos outros ficam apagados */
+.escala[data-sel] .turnos tr[data-g]:not(.sel) td { color: #cfd8dc; }
+
+/* ================================================================ comum */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 button {
-  font: inherit;
-  color: #fff;
   background: none;
   border: 1px solid rgba(255, 255, 255, .3);
   border-radius: 4px;
@@ -48,16 +87,9 @@ button {
   align-items: center;
   justify-content: space-between;
   background: var(--escuro);
-  color: #fff;
 }
 
 .escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
-
-.t-07 { color: var(--t-07); font-weight: 700; }
-.t-19 { color: var(--t-19); font-weight: 700; }
-.t-F  { color: var(--t-F);  font-weight: 700; }
-
-.domingo, .dom { color: var(--domingo); }
 
 /* ------------------------------------------------- qual vista aparece
    Em pe: a lista de dias com rolagem infinita. Deitado: a grade com o ano
@@ -77,7 +109,7 @@ button {
 @media (orientation: landscape) {
   /* documento em fluxo normal: numa tela deitada e baixa a grade precisa
      poder rolar nos dois eixos, entao aqui nao vale o overflow:hidden */
-  body { background: var(--fds); padding: 16px; font-size: 13px; }
+  body { background: var(--fds); padding: 16px; }
   #retrato { display: none; }
 }
 
@@ -98,9 +130,8 @@ button {
   z-index: 4;
 }
 
-#retrato h1 { font-size: 20px; font-weight: 500; }
 #retrato button { padding: 6px 14px; }
-#retrato button.icone { border: 0; padding: 0 8px; font-size: 24px; }
+#retrato button.icone { border: 0; padding: 0 8px; }
 #retrato button.ativo { background: var(--destaque); border-color: var(--destaque); }
 
 #retrato .rolagem {
@@ -125,8 +156,6 @@ button {
 
 #retrato .escala th {
   background: var(--escuro);
-  color: #fff;
-  font-weight: 500;
   padding: 12px 8px;
   border: 1px solid #546e7a;
 }
@@ -134,7 +163,6 @@ button {
 #retrato .escala td {
   padding: 10px 8px;
   text-align: center;
-  font-weight: 500;
   border: 1px solid var(--borda);
 }
 
@@ -142,8 +170,6 @@ button {
 
 #retrato tbody tr:nth-child(even) { background: var(--zebra); }
 #retrato tr.hoje { background: var(--sel); }
-#retrato tr.hoje td:first-child { color: var(--destaque); font-weight: 600; }
-#retrato .domingo { font-weight: 600; }
 
 /* Realce da coluna. Data=1, Dia=2, G1=3 ... G5=7 */
 #retrato .escala[data-sel="G1"] td:nth-child(3), #retrato .escala[data-sel="G2"] td:nth-child(4),
@@ -204,29 +230,29 @@ button {
 }
 
 #paisagem .topo { gap: 16px; padding: 10px 16px; }
-#paisagem h1 { font-size: 17px; font-weight: 500; letter-spacing: .5px; }
 #paisagem button { padding: 4px 10px; }
 
 #paisagem .navegacao { display: flex; align-items: center; gap: 10px; }
-#paisagem .navegacao strong { font-size: 19px; min-width: 4ch; text-align: center; }
+#paisagem .navegacao strong { min-width: 4ch; text-align: center; }
 
 #paisagem .faixa { overflow-x: auto; }
 
-#paisagem .escala { min-width: 1240px; }
+/* A largura das colunas segue a letra: com layout automatico as 70 colunas
+   de dia crescem junto com a fonte dos turnos e dos dias, e a grade passa
+   a rolar de lado (dentro da .faixa) quando nao cabe na tela. */
+#paisagem .escala { table-layout: auto; }
 
-#paisagem .escala th, #paisagem .escala td { border: 1px solid var(--borda); text-align: center; height: 21px; }
-#paisagem .escala td { font-size: 11px; }
-
-/* rotulo do mes / do grupo, repetido nas duas pontas da faixa */
-#paisagem tr > th:first-child, #paisagem tr > th:last-child {
-  width: 42px;
-  background: var(--escuro);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
+#paisagem .escala th, #paisagem .escala td {
+  border: 1px solid var(--borda);
+  text-align: center;
+  padding: 1px 2px;
+  white-space: nowrap;
 }
 
-#paisagem .semana th { background: var(--fds); color: #546e7a; font-size: 10px; font-weight: 600; }
+/* rotulo do mes / do grupo, repetido nas duas pontas da faixa */
+#paisagem tr > th:first-child, #paisagem tr > th:last-child { width: 42px; background: var(--escuro); }
+
+#paisagem .semana th { background: var(--fds); }
 #paisagem .semana th.fds { background: #cfd8dc; }
 
 #paisagem .meses tr:nth-child(even) td { background: var(--zebra); }
@@ -235,12 +261,8 @@ button {
 /* coluna de hoje: faixa vertical que atravessa a tabela inteira, desenhada
    por dentro da celula para nao brigar com o fundo dela */
 #paisagem .hoje { box-shadow: inset 2px 0 0 var(--destaque), inset -2px 0 0 var(--destaque); }
-#paisagem td.data-hoje { color: var(--destaque); font-weight: 700; }
 
 #paisagem .turnos tr[data-g] { cursor: pointer; user-select: none; }
-
-/* com um grupo escolhido, os outros saem de cena */
-#paisagem .escala[data-sel] .turnos tr[data-g]:not(.sel) td { color: #cfd8dc; }
 #paisagem .turnos tr.sel > th { background: var(--destaque); }
 
 /* so onde existe mouse de verdade: no celular deitado o realce grudaria
@@ -363,14 +385,19 @@ button {
       `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
 
     // -------------------------------------------------------- montagem
+    // As classes data, dia, dom e data-hoje sao as mesmas da grade: e por
+    // elas que a tipografia (uma so, la no CSS) vale para as duas vistas.
     const linha = (d) => {
+      const k = chave(d);
+      const hoje = k === CHAVE_HOJE;
+      const dom = d.getDay() === 0 ? ' dom' : '';
       const turnos = DEFASAGEM.map((def) => {
         const t = turnoDe(d, def);
         return `<td class="t-${t}">${t}</td>`;
       }).join('');
-      return `<tr data-d="${chave(d)}"${chave(d) === CHAVE_HOJE ? ' class="hoje"' : ''}>` +
-             `<td>${formata(d)}</td>` +
-             `<td${d.getDay() === 0 ? ' class="domingo"' : ''}>${DIAS[d.getDay()]}</td>` +
+      return `<tr data-d="${k}"${hoje ? ' class="hoje"' : ''}>` +
+             `<td class="data${dom}${hoje ? ' data-hoje' : ''}">${formata(d)}</td>` +
+             `<td class="dia${dom}">${DIAS[d.getDay()]}</td>` +
              turnos + '</tr>';
     };
 
@@ -525,7 +552,7 @@ button {
                           (c === colHoje ? 'hoje' : '');
 
     const faixaSemana = () =>
-      `<tr class="semana"><th></th>${celulas((c) => `<th class="${classe(c)}">${SEMANA[c % 7]}</th>`)}<th></th></tr>`;
+      `<tr class="semana"><th></th>${celulas((c) => `<th class="dia ${classe(c)}">${SEMANA[c % 7]}</th>`)}<th></th></tr>`;
 
     const faixaMes = (m) => {
       const dias = Array(COLUNAS).fill('');
@@ -533,7 +560,7 @@ button {
         dias[coluna(new Date(ano, m, dia))] = dia;
       return `<tr><th>${MESES_CURTO[m]}</th>` + celulas((c) => {
         const eHoje = c === colHoje && dias[c] === HOJE.getDate() && m === HOJE.getMonth();
-        return `<td class="${classe(c)}${eHoje ? ' data-hoje' : ''}">${dias[c]}</td>`;
+        return `<td class="data ${classe(c)}${eHoje ? ' data-hoje' : ''}">${dias[c]}</td>`;
       }) + `<th>${MESES_CURTO[m]}</th></tr>`;
     };
 
