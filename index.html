@@ -61,11 +61,11 @@ button.icone      { font-size: 24px; }                            /* botao do me
 .t-19 { color: #2e7d32; }
 .t-F  { color: #c62828; }
 
-/* domingo: o dia da semana e o dia do mes. Fica depois das regras acima
-   de proposito: na mesma celula, vence. */
-.escala .dom { color: #d32f2f; font-weight: 600; }
+/* fim de semana: o dia da semana e o dia do mes de sabado e domingo. Fica
+   depois das regras acima de proposito: na mesma celula, vence. */
+.escala .fds { color: #d32f2f; font-weight: 600; }
 
-/* hoje: o dia do mes de hoje. Fica por ultimo: vence ate o domingo. */
+/* hoje: o dia do mes de hoje. Fica por ultimo: vence ate o fim de semana. */
 .escala .data-hoje { color: var(--destaque); font-weight: 700; }
 
 /* na grade, com um grupo escolhido os turnos dos outros ficam apagados */
@@ -385,19 +385,19 @@ button {
       `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
 
     // -------------------------------------------------------- montagem
-    // As classes data, dia, dom e data-hoje sao as mesmas da grade: e por
+    // As classes data, dia, fds e data-hoje sao as mesmas da grade: e por
     // elas que a tipografia (uma so, la no CSS) vale para as duas vistas.
     const linha = (d) => {
       const k = chave(d);
       const hoje = k === CHAVE_HOJE;
-      const dom = d.getDay() === 0 ? ' dom' : '';
+      const fds = d.getDay() === 0 || d.getDay() === 6 ? ' fds' : '';
       const turnos = DEFASAGEM.map((def) => {
         const t = turnoDe(d, def);
         return `<td class="t-${t}">${t}</td>`;
       }).join('');
       return `<tr data-d="${k}"${hoje ? ' class="hoje"' : ''}>` +
-             `<td class="data${dom}${hoje ? ' data-hoje' : ''}">${formata(d)}</td>` +
-             `<td class="dia${dom}">${DIAS[d.getDay()]}</td>` +
+             `<td class="data${fds}${hoje ? ' data-hoje' : ''}">${formata(d)}</td>` +
+             `<td class="dia${fds}">${DIAS[d.getDay()]}</td>` +
              turnos + '</tr>';
     };
 
@@ -548,8 +548,7 @@ button {
     const coluna = (d) => mod(diasEntre(EPOCA, d), COLUNAS);
     const celulas = (fn) => Array.from({ length: COLUNAS }, (_, c) => fn(c)).join('');
 
-    const classe = (c) => (c % 7 > 4 ? 'fds ' : '') + (c % 7 === 6 ? 'dom ' : '') +
-                          (c === colHoje ? 'hoje' : '');
+    const classe = (c) => (c % 7 > 4 ? 'fds ' : '') + (c === colHoje ? 'hoje' : '');
 
     const faixaSemana = () =>
       `<tr class="semana"><th></th>${celulas((c) => `<th class="dia ${classe(c)}">${SEMANA[c % 7]}</th>`)}<th></th></tr>`;
