@@ -65,8 +65,11 @@ button.icone      { font-size: 24px; }                            /* botao do me
    depois das regras acima de proposito: na mesma celula, vence. */
 .escala .fds { color: #d32f2f; font-weight: 600; }
 
-/* hoje: o dia do mes de hoje. Fica por ultimo: vence ate o fim de semana. */
+/* hoje: o dia do mes de hoje */
 .escala .data-hoje { color: var(--destaque); font-weight: 700; }
+
+/* data escolhida: o dia clicado na grade. Fica por ultimo: vence ate hoje. */
+.escala .escolha-dia { color: #fff; font-weight: 700; }
 
 /* com um grupo escolhido, os turnos dos outros grupos apagam */
 .escala[data-sel] .turno:not(.sel) { color: #cfd8dc; }
@@ -100,7 +103,8 @@ button.icone      { font-size: 24px; }                            /* botao do me
 .escala tbody tr:nth-child(even) { background: var(--zebra); }
 
 /* Realces. Cada um pinta a celula por cima do anterior, entao a ordem
-   importa: fim de semana < grupo escolhido < hoje. */
+   importa: fim de semana < grupo escolhido < hoje < data apontada <
+   data escolhida. */
 
 /* fim de semana: as celulas de data e de dia da semana de sabado e domingo */
 .escala td.fds { background: #f0f2f3; }
@@ -114,13 +118,28 @@ button.icone      { font-size: 24px; }                            /* botao do me
 /* hoje: a linha (lista) ou a coluna (grade) de hoje */
 .escala td.hoje, .escala th.hoje { background: var(--sel); }
 
-/* rotulo de grupo: clicavel, escolhe o grupo (na grade, a linha inteira) */
-.escala .grupo, .escala tr[data-g] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+/* Data apontada e data escolhida (so na grade, que tem o mes na linha e o
+   dia na coluna). As duas acendem a cruz inteira: a linha do mes e a coluna
+   do dia, do cabecalho ate os turnos. Quem marca as celulas e o JS, em
+   `cruz`. */
 
-/* so onde existe mouse de verdade: no celular o realce grudaria depois
-   do toque. O grupo ja escolhido nao muda de cor. */
-@media (hover: hover) {
-  .escala .grupo:not(.sel):hover, .escala tr[data-g]:hover > th:not(.sel) { background: #546e7a; }
+/* sob o mouse: cinza, para nao se confundir com o azul das escolhas */
+.escala td.aponta     { background: #dbe1e5; }
+.escala th.dia.aponta { background: #b0bec5; }
+.escala th.mes.aponta { background: #546e7a; }
+
+/* escolhida: azul, e o dia clicado em si fica cheio */
+.escala td.escolha     { background: #cfe4f7; }
+.escala th.dia.escolha { background: #90caf9; }
+.escala th.mes.escolha { background: var(--destaque); }
+.escala td.escolha-dia { background: var(--destaque); }
+
+/* clicaveis: o rotulo de grupo escolhe o grupo (na grade, a linha inteira)
+   e o dia do mes escolhe a data */
+.escala .grupo, .escala tr[data-g], .escala td[data-d] {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ================================================================ comum */
@@ -142,8 +161,6 @@ button {
 }
 
 .escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
-
-@media (hover: hover) { button:hover { background: rgba(255, 255, 255, .15); } }
 
 /* ------------------------------------------------- qual vista aparece
    Em pe: a lista de dias com rolagem infinita. Deitado: a grade com o ano
@@ -551,6 +568,10 @@ button {
 
     let ano = HOJE.getFullYear(), colHoje = -1;
 
+    // Data escolhida (a chave do dia) e data sob o mouse (a celula dela).
+    // Valem so nesta vista: a lista nao tem o mes na linha nem o dia na coluna.
+    let diaSel = '', apontada = null;
+
     const coluna = (d) => mod(diasEntre(EPOCA, d), COLUNAS);
     const celulas = (fn) => Array.from({ length: COLUNAS }, (_, c) => fn(c)).join('');
 
@@ -563,10 +584,14 @@ button {
       const dias = Array(COLUNAS).fill('');
       for (let dia = 1, ultimo = new Date(ano, m + 1, 0).getDate(); dia <= ultimo; dia++)
         dias[coluna(new Date(ano, m, dia))] = dia;
-      return `<tr><th>${MESES_CURTO[m]}</th>` + celulas((c) => {
-        const eHoje = c === colHoje && dias[c] === HOJE.getDate() && m === HOJE.getMonth();
-        return `<td class="data ${classe(c)}${eHoje ? ' data-hoje' : ''}">${dias[c]}</td>`;
-      }) + `<th>${MESES_CURTO[m]}</th></tr>`;
+      // data-d so nas celulas com dia: e por ele que o clique sabe qual data
+      // foi escolhida, e as celulas vazias do mes ficam de fora
+      return `<tr><th class="mes">${MESES_CURTO[m]}</th>` + celulas((c) => {
+        const dia = dias[c];
+        const eHoje = c === colHoje && dia === HOJE.getDate() && m === HOJE.getMonth();
+        const d = dia ? ` data-d="${chave(new Date(ano, m, dia))}"` : '';
+        return `<td class="data ${classe(c)}${eHoje ? ' data-hoje' : ''}"${d}>${dia}</td>`;
+      }) + `<th class="mes">${MESES_CURTO[m]}</th></tr>`;
     };
 
     const faixaGrupo = (g) => {
@@ -575,6 +600,35 @@ button {
         const t = turnoDe(maisDias(EPOCA, c), DEFASAGEM[g]);
         return `<td class="turno t-${t}${c === colHoje ? ' hoje' : ''}">${t}</td>`;
       }) + `<th class="grupo">${GRUPOS[g]}</th></tr>`;
+    };
+
+    // Acende a cruz de uma data: a linha do mes e a coluna do dia. Toda
+    // linha da grade tem as mesmas 72 celulas (rotulo + 70 dias + rotulo),
+    // entao a coluna e o mesmo indice em todas elas.
+    const cruz = (cel, classe, ligar) => {
+      for (const linha of escala.rows) linha.cells[cel.cellIndex].classList.toggle(classe, ligar);
+      for (const irma of cel.parentNode.cells) irma.classList.toggle(classe, ligar);
+    };
+
+    const aplicarDia = () => {
+      escala.querySelectorAll('.escolha, .escolha-dia')
+            .forEach((c) => c.classList.remove('escolha', 'escolha-dia'));
+      // a data escolhida so existe no ano dela: nos outros nao ha celula
+      const cel = diaSel && escala.querySelector(`td[data-d="${diaSel}"]`);
+      if (!cel) return;
+      cruz(cel, 'escolha', true);
+      cel.classList.add('escolha-dia');
+    };
+
+    // so onde existe mouse de verdade: no celular o realce grudaria na tela
+    // depois do toque, que ja escolhe a data
+    const TEM_MOUSE = matchMedia('(hover: hover)');
+
+    const apontar = (cel) => {
+      if (!TEM_MOUSE.matches || cel === apontada) return;
+      if (apontada) cruz(apontada, 'aponta', false);
+      apontada = cel;
+      if (apontada) cruz(apontada, 'aponta', true);
     };
 
     const aplicarGrupo = () => {
@@ -593,18 +647,32 @@ button {
         `<thead>${faixaSemana()}</thead>` +
         `<tbody class="meses">${MESES_CURTO.map((_, m) => faixaMes(m)).join('')}</tbody>` +
         `<tbody class="turnos">${faixaSemana()}${DEFASAGEM.map((_, g) => faixaGrupo(g)).join('')}</tbody>`;
+      // a grade e outra: o realce do mouse morreu com a anterior, e a data
+      // escolhida so volta a acender se o ano dela for este
+      apontada = null;
       aplicarGrupo();
+      aplicarDia();
     };
 
     // -------------------------------------------------------- eventos
     const mudarAno = (n) => { ano += n; desenhar(); };
 
     escala.onclick = (e) => {
+      const td = e.target.closest('td[data-d]');
+      if (td) {
+        // clicar de novo na mesma data desfaz, como no grupo
+        diaSel = diaSel === td.dataset.d ? '' : td.dataset.d;
+        aplicarDia();
+        return;
+      }
       const tr = e.target.closest('.turnos tr[data-g]');
       if (!tr) return;
       grupoSel = grupoSel === tr.dataset.g ? '' : tr.dataset.g;
       aplicarGrupo();
     };
+
+    escala.onmouseover = (e) => apontar(e.target.closest('td[data-d]'));
+    escala.onmouseleave = () => apontar(null);
 
     document.getElementById('anterior').onclick = () => mudarAno(-1);
     document.getElementById('proximo').onclick = () => mudarAno(1);
