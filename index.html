@@ -14,10 +14,10 @@
 :root {
   --escuro:   #37474f;
   --destaque: #1976d2;   /* grupo escolhido e dia de hoje */
-  --sel:      #e3f2fd;   /* coluna selecionada e linha de hoje */
+  --sel:      #e3f2fd;   /* celulas do grupo escolhido e de hoje */
   --borda:    #e0e0e0;
   --zebra:    #fafafa;
-  --fds:      #eceff1;   /* colunas de sabado e domingo */
+  --fds:      #eceff1;   /* faixa dos dias da semana e fundo da grade */
 }
 
 /* ========================================= tipografia (as duas vistas)
@@ -56,7 +56,7 @@ button.icone      { font-size: 24px; }                            /* botao do me
 .escala .data { font-size: 13px; font-weight: 500; color: #212121; }
 
 /* turnos: 07 (manha), 19 (noite) e F (folga) */
-.t-07, .t-19, .t-F { font-size: 13px; font-weight: 700; }
+.turno { font-size: 13px; font-weight: 700; }
 .t-07 { color: #006064; }
 .t-19 { color: #2e7d32; }
 .t-F  { color: #c62828; }
@@ -68,8 +68,60 @@ button.icone      { font-size: 24px; }                            /* botao do me
 /* hoje: o dia do mes de hoje. Fica por ultimo: vence ate o fim de semana. */
 .escala .data-hoje { color: var(--destaque); font-weight: 700; }
 
-/* na grade, com um grupo escolhido os turnos dos outros ficam apagados */
-.escala[data-sel] .turnos tr[data-g]:not(.sel) td { color: #cfd8dc; }
+/* com um grupo escolhido, os turnos dos outros grupos apagam */
+.escala[data-sel] .turno:not(.sel) { color: #cfd8dc; }
+
+/* ============================================ celulas (as duas vistas)
+   Borda, fundo, espacamento e realces das celulas moram SO AQUI e valem
+   igual na lista e na grade, como na tipografia: as secoes das vistas
+   nao mexem em celula. A unica diferenca proposital e a densidade. */
+
+/* densidade: a lista tem 7 colunas e precisa de linha alta para o dedo;
+   a grade tem 72 colunas e precisa caber na tela. E o unico valor de
+   celula que muda de uma vista para a outra. */
+#retrato  { --celula-espaco: 10px 8px; }
+#paisagem { --celula-espaco: 1px 2px; }
+
+/* toda celula */
+.escala th, .escala td {
+  padding: var(--celula-espaco);
+  border: 1px solid var(--borda);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* rotulos: Data, Dia, G1..G5 na lista; JAN..DEZ, G1..G5 na grade */
+.escala th { background: var(--escuro); }
+
+/* faixa dos dias da semana (so na grade) */
+.escala th.dia { background: var(--fds); }
+
+/* linhas alternadas */
+.escala tbody tr:nth-child(even) { background: var(--zebra); }
+
+/* Realces. Cada um pinta a celula por cima do anterior, entao a ordem
+   importa: fim de semana < grupo escolhido < hoje. */
+
+/* fim de semana: as celulas de data e de dia da semana de sabado e domingo */
+.escala td.fds { background: #f0f2f3; }
+.escala th.fds { background: #cfd8dc; }
+
+/* grupo escolhido: a coluna (lista) ou a linha (grade) dele ganha fundo e
+   o rotulo acende. Os turnos dos outros apagam: regra na tipografia. */
+.escala td.sel { background: var(--sel); }
+.escala th.sel { background: var(--destaque); }
+
+/* hoje: a linha (lista) ou a coluna (grade) de hoje */
+.escala td.hoje, .escala th.hoje { background: var(--sel); }
+
+/* rotulo de grupo: clicavel, escolhe o grupo (na grade, a linha inteira) */
+.escala .grupo, .escala tr[data-g] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+/* so onde existe mouse de verdade: no celular o realce grudaria depois
+   do toque. O grupo ja escolhido nao muda de cor. */
+@media (hover: hover) {
+  .escala .grupo:not(.sel):hover, .escala tr[data-g]:hover > th:not(.sel) { background: #546e7a; }
+}
 
 /* ================================================================ comum */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -90,6 +142,8 @@ button {
 }
 
 .escala { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+@media (hover: hover) { button:hover { background: rgba(255, 255, 255, .15); } }
 
 /* ------------------------------------------------- qual vista aparece
    Em pe: a lista de dias com rolagem infinita. Deitado: a grade com o ano
@@ -154,32 +208,6 @@ button {
 
 #retrato .escala thead { position: sticky; top: 0; z-index: 1; }
 
-#retrato .escala th {
-  background: var(--escuro);
-  padding: 12px 8px;
-  border: 1px solid #546e7a;
-}
-
-#retrato .escala td {
-  padding: 10px 8px;
-  text-align: center;
-  border: 1px solid var(--borda);
-}
-
-#retrato th.grupo { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
-
-#retrato tbody tr:nth-child(even) { background: var(--zebra); }
-#retrato tr.hoje { background: var(--sel); }
-
-/* Realce da coluna. Data=1, Dia=2, G1=3 ... G5=7 */
-#retrato .escala[data-sel="G1"] td:nth-child(3), #retrato .escala[data-sel="G2"] td:nth-child(4),
-#retrato .escala[data-sel="G3"] td:nth-child(5), #retrato .escala[data-sel="G4"] td:nth-child(6),
-#retrato .escala[data-sel="G5"] td:nth-child(7) { background: var(--sel); }
-
-#retrato .escala[data-sel="G1"] th:nth-child(3), #retrato .escala[data-sel="G2"] th:nth-child(4),
-#retrato .escala[data-sel="G3"] th:nth-child(5), #retrato .escala[data-sel="G4"] th:nth-child(6),
-#retrato .escala[data-sel="G5"] th:nth-child(7) { background: var(--destaque); }
-
 /* ----------------------------------------------------- retrato: menu */
 #retrato .menu {
   position: fixed;
@@ -242,36 +270,8 @@ button {
    a rolar de lado (dentro da .faixa) quando nao cabe na tela. */
 #paisagem .escala { table-layout: auto; }
 
-#paisagem .escala th, #paisagem .escala td {
-  border: 1px solid var(--borda);
-  text-align: center;
-  padding: 1px 2px;
-  white-space: nowrap;
-}
-
 /* rotulo do mes / do grupo, repetido nas duas pontas da faixa */
-#paisagem tr > th:first-child, #paisagem tr > th:last-child { width: 42px; background: var(--escuro); }
-
-#paisagem .semana th { background: var(--fds); }
-#paisagem .semana th.fds { background: #cfd8dc; }
-
-#paisagem .meses tr:nth-child(even) td { background: var(--zebra); }
-#paisagem td.fds { background: #f0f2f3; }
-
-/* coluna de hoje: faixa vertical que atravessa a tabela inteira, desenhada
-   por dentro da celula para nao brigar com o fundo dela */
-#paisagem .hoje { box-shadow: inset 2px 0 0 var(--destaque), inset -2px 0 0 var(--destaque); }
-
-#paisagem .turnos tr[data-g] { cursor: pointer; user-select: none; }
-#paisagem .turnos tr.sel > th { background: var(--destaque); }
-
-/* so onde existe mouse de verdade: no celular deitado o realce grudaria
-   depois do toque */
-@media (hover: hover) {
-  #retrato button:hover, #retrato th.grupo:hover { background: rgba(255, 255, 255, .12); }
-  #paisagem button:hover { background: rgba(255, 255, 255, .15); }
-  #paisagem .turnos tr[data-g]:hover > th { background: #546e7a; }
-}
+#paisagem tr > th:first-child, #paisagem tr > th:last-child { width: 42px; }
 </style>
 </head>
 <body>
@@ -385,19 +385,20 @@ button {
       `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
 
     // -------------------------------------------------------- montagem
-    // As classes data, dia, fds e data-hoje sao as mesmas da grade: e por
-    // elas que a tipografia (uma so, la no CSS) vale para as duas vistas.
+    // As classes das celulas (data, dia, turno, fds, hoje, sel...) sao as
+    // mesmas da grade: e por elas que a tipografia e as celulas, regras
+    // unicas la no CSS, valem para as duas vistas.
     const linha = (d) => {
       const k = chave(d);
-      const hoje = k === CHAVE_HOJE;
+      const hoje = k === CHAVE_HOJE ? ' hoje' : '';
       const fds = d.getDay() === 0 || d.getDay() === 6 ? ' fds' : '';
-      const turnos = DEFASAGEM.map((def) => {
+      const turnos = DEFASAGEM.map((def, g) => {
         const t = turnoDe(d, def);
-        return `<td class="t-${t}">${t}</td>`;
+        return `<td class="turno t-${t}${hoje}${GRUPOS[g] === grupoSel ? ' sel' : ''}">${t}</td>`;
       }).join('');
-      return `<tr data-d="${k}"${hoje ? ' class="hoje"' : ''}>` +
-             `<td class="data${fds}${hoje ? ' data-hoje' : ''}">${formata(d)}</td>` +
-             `<td class="dia${fds}">${DIAS[d.getDay()]}</td>` +
+      return `<tr data-d="${k}">` +
+             `<td class="data${fds}${hoje}${hoje ? ' data-hoje' : ''}">${formata(d)}</td>` +
+             `<td class="dia${fds}${hoje}">${DIAS[d.getDay()]}</td>` +
              turnos + '</tr>';
     };
 
@@ -439,7 +440,7 @@ button {
     // ------------------------------------------------------- navegacao
     const irParaHoje = () => {
       fecharMenu();
-      const tr = corpo.querySelector('.hoje');
+      const tr = corpo.querySelector('.hoje')?.parentNode;
       if (tr) rolagem.scrollTop = tr.offsetTop - rolagem.clientHeight / 2 + tr.offsetHeight / 2;
     };
 
@@ -497,6 +498,11 @@ button {
 
     const aplicarGrupo = () => {
       if (grupoSel) escala.dataset.sel = grupoSel; else delete escala.dataset.sel;
+      // a classe sel vai em cada celula da coluna: e ela que o CSS realca.
+      // Data=0, Dia=1, G1=2 ... G5=6; as linhas carregadas depois ja nascem
+      // com ela (ver `linha`).
+      const col = grupoSel ? GRUPOS.indexOf(grupoSel) + 2 : -1;
+      for (const tr of escala.rows) [...tr.cells].forEach((c, i) => c.classList.toggle('sel', i === col));
     };
 
     // -------------------------------------------------------- eventos
@@ -565,15 +571,18 @@ button {
 
     const faixaGrupo = (g) => {
       // Qualquer data da coluna serve: o ciclo de 10 dias divide 70 certinho.
-      return `<tr data-g="${GRUPOS[g]}"><th>${GRUPOS[g]}</th>` + celulas((c) => {
+      return `<tr data-g="${GRUPOS[g]}"><th class="grupo">${GRUPOS[g]}</th>` + celulas((c) => {
         const t = turnoDe(maisDias(EPOCA, c), DEFASAGEM[g]);
-        return `<td class="t-${t}${c === colHoje ? ' hoje' : ''}">${t}</td>`;
-      }) + `<th>${GRUPOS[g]}</th></tr>`;
+        return `<td class="turno t-${t}${c === colHoje ? ' hoje' : ''}">${t}</td>`;
+      }) + `<th class="grupo">${GRUPOS[g]}</th></tr>`;
     };
 
     const aplicarGrupo = () => {
-      escala.querySelectorAll('tr[data-g]')
-            .forEach((r) => r.classList.toggle('sel', r.dataset.g === grupoSel));
+      // a classe sel vai em cada celula da linha: e ela que o CSS realca
+      escala.querySelectorAll('tr[data-g]').forEach((r) => {
+        const sel = r.dataset.g === grupoSel;
+        for (const c of r.cells) c.classList.toggle('sel', sel);
+      });
       if (grupoSel) escala.dataset.sel = grupoSel; else delete escala.dataset.sel;
     };
 
