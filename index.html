@@ -118,17 +118,17 @@ button.icone      { font-size: 24px; }                            /* botao do me
 /* hoje: a linha (lista) ou a coluna (grade) de hoje */
 .escala td.hoje, .escala th.hoje { background: var(--sel); }
 
-/* Data apontada e data escolhida (so na grade, que tem o mes na linha e o
-   dia na coluna). As duas acendem a cruz inteira: a linha do mes e a coluna
-   do dia, do cabecalho ate os turnos. Quem marca as celulas e o JS, em
-   `cruz`. */
+/* Data apontada e datas escolhidas (so na grade, que tem o mes na linha e
+   o dia na coluna). Cada uma acende a cruz inteira: a linha do mes e a
+   coluna do dia, do cabecalho ate os turnos. Quem marca as celulas e o JS,
+   em `cruz`. */
 
 /* sob o mouse: cinza, para nao se confundir com o azul das escolhas */
 .escala td.aponta     { background: #dbe1e5; }
 .escala th.dia.aponta { background: #b0bec5; }
 .escala th.mes.aponta { background: #546e7a; }
 
-/* escolhida: azul, e o dia clicado em si fica cheio */
+/* escolhidas: azul, e cada dia clicado em si fica cheio */
 .escala td.escolha     { background: #cfe4f7; }
 .escala th.dia.escolha { background: #90caf9; }
 .escala th.mes.escolha { background: var(--destaque); }
@@ -568,9 +568,11 @@ button {
 
     let ano = HOJE.getFullYear(), colHoje = -1;
 
-    // Data escolhida (a chave do dia) e data sob o mouse (a celula dela).
-    // Valem so nesta vista: a lista nao tem o mes na linha nem o dia na coluna.
-    let diaSel = '', apontada = null;
+    // Datas escolhidas (as chaves dos dias) e data sob o mouse (a celula
+    // dela). Valem so nesta vista: a lista nao tem o mes na linha nem o dia
+    // na coluna.
+    const diasSel = new Set();
+    let apontada = null;
 
     const coluna = (d) => mod(diasEntre(EPOCA, d), COLUNAS);
     const celulas = (fn) => Array.from({ length: COLUNAS }, (_, c) => fn(c)).join('');
@@ -610,14 +612,19 @@ button {
       for (const irma of cel.parentNode.cells) irma.classList.toggle(classe, ligar);
     };
 
+    // Redesenha do zero: apaga tudo e acende a cruz de cada data escolhida.
+    // Refazer e mais simples do que apagar uma cruz so, que pode cruzar com
+    // as outras - e com poucas dezenas de datas nem se nota.
     const aplicarDia = () => {
       escala.querySelectorAll('.escolha, .escolha-dia')
             .forEach((c) => c.classList.remove('escolha', 'escolha-dia'));
-      // a data escolhida so existe no ano dela: nos outros nao ha celula
-      const cel = diaSel && escala.querySelector(`td[data-d="${diaSel}"]`);
-      if (!cel) return;
-      cruz(cel, 'escolha', true);
-      cel.classList.add('escolha-dia');
+      for (const d of diasSel) {
+        // as datas de outros anos ficam guardadas, mas nao tem celula aqui
+        const cel = escala.querySelector(`td[data-d="${d}"]`);
+        if (!cel) continue;
+        cruz(cel, 'escolha', true);
+        cel.classList.add('escolha-dia');
+      }
     };
 
     // so onde existe mouse de verdade: no celular o realce grudaria na tela
@@ -647,8 +654,8 @@ button {
         `<thead>${faixaSemana()}</thead>` +
         `<tbody class="meses">${MESES_CURTO.map((_, m) => faixaMes(m)).join('')}</tbody>` +
         `<tbody class="turnos">${faixaSemana()}${DEFASAGEM.map((_, g) => faixaGrupo(g)).join('')}</tbody>`;
-      // a grade e outra: o realce do mouse morreu com a anterior, e a data
-      // escolhida so volta a acender se o ano dela for este
+      // a grade e outra: o realce do mouse morreu com a anterior, e as datas
+      // escolhidas so voltam a acender no ano delas
       apontada = null;
       aplicarGrupo();
       aplicarDia();
@@ -660,8 +667,9 @@ button {
     escala.onclick = (e) => {
       const td = e.target.closest('td[data-d]');
       if (td) {
-        // clicar de novo na mesma data desfaz, como no grupo
-        diaSel = diaSel === td.dataset.d ? '' : td.dataset.d;
+        // cada clique acrescenta uma data as escolhidas; na que ja estava
+        // escolhida, tira. `delete` avisa se ela estava la.
+        if (!diasSel.delete(td.dataset.d)) diasSel.add(td.dataset.d);
         aplicarDia();
         return;
       }
@@ -685,6 +693,8 @@ button {
       tecla: (e) => {
         if (e.key === 'ArrowLeft') mudarAno(-1);
         if (e.key === 'ArrowRight') mudarAno(1);
+        // limpa de uma vez, em vez de clicar data por data
+        if (e.key === 'Escape') { diasSel.clear(); aplicarDia(); }
       },
     };
   };
