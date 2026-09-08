@@ -6,7 +6,15 @@
 <meta name="theme-color" content="#37474f">
 <meta name="description" content="Escala de turnos 12h dos grupos G1 a G5">
 <title>Tabela de Turno 12H</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2337474f'/%3E%3Crect x='6' y='9' width='20' height='15' rx='2' fill='%23fff'/%3E%3Crect x='6' y='9' width='20' height='4' fill='%231976d2'/%3E%3Crect x='9' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='14' y='16' width='4' height='3' fill='%2337474f'/%3E%3Crect x='19' y='16' width='4' height='3' fill='%23c62828'/%3E%3C/svg%3E">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="icon" href="icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- instalado, abre em tela cheia; o nome curto e o do manifest -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Turnos 12H">
 <style>
 /* ================================================================ cores
    Paleta de fundos e bordas. Cor que so aparece em texto fica junto com
@@ -181,7 +189,12 @@ button {
 @media (orientation: landscape) {
   /* documento em fluxo normal: numa tela deitada e baixa a grade precisa
      poder rolar nos dois eixos, entao aqui nao vale o overflow:hidden */
-  body { background: var(--fds); padding: 16px; }
+  body {
+    background: var(--fds);
+    /* deitado, o entalhe fica numa das laterais */
+    padding: 16px calc(16px + env(safe-area-inset-right))
+             calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
   #retrato { display: none; }
 }
 
@@ -196,7 +209,9 @@ button {
 }
 
 #retrato .topo {
-  padding: 12px 16px;
+  /* instalado em tela cheia, a barra de status do aparelho fica por cima da
+     pagina: o env() devolve o respiro dela (zero no navegador comum) */
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
   /* acima do menu: o botao fechar recebe o clique de verdade, em vez de
      depender de acertar o fundo do overlay */
   z-index: 4;
@@ -209,6 +224,8 @@ button {
 #retrato .rolagem {
   flex: 1;
   overflow: hidden auto;
+  /* respiro da barra de gestos, para a ultima linha nao ficar sob ela */
+  padding-bottom: env(safe-area-inset-bottom);
   /* encaixa 1px sob o topo: sem isso sobra uma fresta por onde as linhas
      aparecem entre o cabecalho do app e o cabecalho fixo da tabela */
   margin-top: -1px;
@@ -237,14 +254,14 @@ button {
   /* comeca abaixo do topo: mantem o botao do menu clicavel e deixa area de
      fundo sobrando para fechar tocando fora */
   align-items: flex-start;
-  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top));
 }
 #retrato .menu[hidden] { display: none; }
 
 #retrato .menu > div {
   width: 100%;
   max-width: 600px;
-  max-height: calc(100dvh - 56px);
+  max-height: calc(100dvh - 56px - env(safe-area-inset-top));
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -724,6 +741,14 @@ button {
 
   ehRetrato.addEventListener('change', trocarVista);
   trocarVista();
+
+  // --------------------------------------------------- instalar como app
+  // O service worker guarda a pagina e os icones, e e o que faz o Android
+  // oferecer "Instalar app" em vez de so um atalho. So existe em HTTPS (ou
+  // localhost); abrindo o arquivo direto, o catch evita erro no console.
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 })();
 </script>
 </body>
