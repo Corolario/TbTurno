@@ -684,7 +684,13 @@ button {
 
     document.getElementById('anterior').onclick = () => mudarAno(-1);
     document.getElementById('proximo').onclick = () => mudarAno(1);
-    document.getElementById('btnAnoHoje').onclick = () => { ano = HOJE.getFullYear(); desenhar(); };
+    // o botao Hoje recomeca: volta ao ano corrente e deixa so hoje escolhida
+    document.getElementById('btnAnoHoje').onclick = () => {
+      ano = HOJE.getFullYear();
+      diasSel.clear();
+      diasSel.add(CHAVE_HOJE);
+      desenhar();
+    };
 
     desenhar();
 
@@ -693,8 +699,6 @@ button {
       tecla: (e) => {
         if (e.key === 'ArrowLeft') mudarAno(-1);
         if (e.key === 'ArrowRight') mudarAno(1);
-        // limpa de uma vez, em vez de clicar data por data
-        if (e.key === 'Escape') { diasSel.clear(); aplicarDia(); }
       },
     };
   };
