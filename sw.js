@@ -2,7 +2,7 @@
    AO PUBLICAR UMA MUDANCA, suba o numero da versao abaixo. E ele que faz o
    aparelho trocar o cache antigo pelo novo; sem isso, quem ja instalou pode
    continuar vendo a versao velha. */
-const VERSAO = 'turnos-v2';
+const VERSAO = 'turnos-v1';
 
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest',
